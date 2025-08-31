@@ -4,6 +4,13 @@ terraform {
       source = "snowflakedb/snowflake"
     }
   }
+
+    backend "s3" {
+        bucket = "rd-tf-state-310825"
+        key    = "terraform.tfstate"
+        region = "us-east-1"
+        use_lockfile = true
+    }
 }
 
 provider "snowflake" {

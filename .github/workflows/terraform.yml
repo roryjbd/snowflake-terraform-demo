@@ -1,0 +1,50 @@
+name: Terraform
+
+permissions:
+   pull-requests: write
+
+on:
+  push:
+    branches: [main]
+
+  pull_request:
+    branches: [main]
+
+jobs:
+  plan:
+    name: Terraform plan
+    runs-on: ubuntu-latest
+    env:
+      SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+    
+    steps:
+      
+      - name: checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID}}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Run a terraform plan
+        run: |
+          terraform init 
+          terraform plan -out .planfile
+
+      - name: Post PR comment
+        if: github.event_name == 'pull_request'
+        uses: borchero/terraform-plan-comment@v2
+        with:
+          token: ${{ github.token }}
+          planfile: .planfile
+
+      - name: Run a terraform deploy if on main branch
+        if: github.ref == 'refs/heads/main'
+        run: |
+          terraform apply .planfile
